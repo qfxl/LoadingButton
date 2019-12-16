@@ -10,7 +10,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 
-
 class LoadingButton @JvmOverloads constructor(
     ctx: Context,
     attr: AttributeSet? = null,
@@ -25,34 +24,27 @@ class LoadingButton @JvmOverloads constructor(
      */
     private var buttonText: String? = null
     /**
-     * button textSize
-     */
-    private var buttonTextSize: Float? = null
-    /**
      * button loading text
      */
     private var loadingText: String? = null
+    /**
+     * button loading textColor
+     */
+    private var loadingTextColor: Int? = null
     /**
      * button textColor
      */
     private var buttonTextColor: Int? = null
     /**
+     * press alpha
+     */
+    private var pressAlpha = 0.7f
+    /**
      * button textView
      */
     private val innerTextView by lazy {
         TextView(context).apply {
-            buttonText?.let { s ->
-                text = s
-            }
-
-            buttonTextColor?.let { color ->
-                setTextColor(color)
-            }
-
-            buttonTextSize?.let { size ->
-                textSize = size
-            }
-            id = View.generateViewId()
+            id = generateViewId()
         }
     }
 
@@ -62,19 +54,20 @@ class LoadingButton @JvmOverloads constructor(
             field = value
             when (value) {
                 STATE.NORMAL -> {
-                    alpha = 1f
-                    loadingLayout?.visibility = View.GONE
-                    isEnabled = true
-                    loadingText?.run {
-                        innerTextView.text = buttonText
-                    }
+                    resetState()
                 }
                 STATE.LOADING -> {
-                    loadingLayout?.visibility = View.VISIBLE
-                    alpha = 0.7f
+                    loadingLayout?.visibility = VISIBLE
+                    alpha = pressAlpha
+                    innerTextView.alpha = pressAlpha
                     isEnabled = false
-                    loadingText?.let { s ->
-                        innerTextView.text = s
+                    if (loadingText != null) {
+                        innerTextView.text = loadingText
+                        loadingTextColor?.let { color ->
+                            innerTextView.setTextColor(color)
+                        }
+                    } else {
+                        innerTextView.visibility = GONE
                     }
                 }
             }
@@ -84,19 +77,15 @@ class LoadingButton @JvmOverloads constructor(
         orientation = HORIZONTAL
         gravity = Gravity.CENTER
         context.obtainStyledAttributes(attr, R.styleable.LoadingButton).apply {
-            innerTextView.apply {
-                textSize = getFloat(R.styleable.LoadingButton_textSize, 14f)
-                setTextColor(
-                    getColor(
-                        R.styleable.LoadingButton_textColor,
-                        Color.parseColor("#666666")
-                    )
-                )
-                buttonText = getString(R.styleable.LoadingButton_text)
-                text = buttonText
-                loadingText = getString(R.styleable.LoadingButton_loadingText)
-            }
-
+            buttonText = getString(R.styleable.LoadingButton_text)
+            buttonTextColor = getColor(
+                R.styleable.LoadingButton_textColor,
+                Color.parseColor("#666666")
+            )
+            loadingText = getString(R.styleable.LoadingButton_loadingText)
+            loadingTextColor =
+                getColor(R.styleable.LoadingButton_loadingTextColor, Color.parseColor("#666666"))
+            pressAlpha = getFloat(R.styleable.LoadingButton_pressAlpha, 0.7f)
             val loadingLayoutId =
                 getResourceId(
                     R.styleable.LoadingButton_loadingLayout,
@@ -104,7 +93,14 @@ class LoadingButton @JvmOverloads constructor(
                 )
             loadingLayout =
                 LayoutInflater.from(context).inflate(loadingLayoutId, this@LoadingButton, false)
-            loadingLayout?.id = View.generateViewId()
+            loadingLayout?.id = generateViewId()
+            innerTextView.apply {
+                textSize = getFloat(R.styleable.LoadingButton_textSize, 14f)
+                buttonTextColor?.let { color ->
+                    setTextColor(color)
+                }
+                text = buttonText
+            }
             recycle()
         }
 
@@ -126,4 +122,20 @@ class LoadingButton @JvmOverloads constructor(
         LOADING,
         NORMAL
     }
+
+    /**
+     * reset inner state
+     */
+    private fun resetState() {
+        alpha = 1f
+        innerTextView.alpha = 1f
+        innerTextView.visibility = VISIBLE
+        buttonTextColor?.let { color ->
+            innerTextView.setTextColor(color)
+        }
+        loadingLayout?.visibility = GONE
+        isEnabled = true
+        innerTextView.text = buttonText
+    }
+
 }
